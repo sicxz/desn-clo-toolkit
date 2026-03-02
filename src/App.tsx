@@ -6,50 +6,49 @@ import { CLOGenerator } from './components/CLOGenerator';
 import { PromptTemplate } from './components/PromptTemplate';
 import { Footer } from './components/Footer';
 
+const navItems = [
+  { href: '#overview', label: 'Overview' },
+  { href: '#framework', label: 'Framework' },
+  { href: '#diagnostics', label: 'Diagnostics' },
+  { href: '#comparison', label: 'Before / After' },
+  { href: '#generator', label: 'Generator' },
+  { href: '#prompt-template', label: 'Prompt' },
+];
+
 export default function App() {
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#FFFFFF',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      width: '100%'
-    }}>
-      {/* Hero - Full viewport intro */}
-      <div style={{ width: '100%' }}>
+    <div className="app-shell">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
+      <header className="site-header">
+        <div className="topbar">
+          <a href="#overview" className="brand">
+            <span className="brand-mark">EWU</span>
+            <span>Design CLO Toolkit</span>
+          </a>
+
+          <nav className="topnav" aria-label="Primary">
+            {navItems.map((item) => (
+              <a key={item.href} href={item.href} className="topnav-link">
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <main id="main-content">
         <HeroSection />
-      </div>
-
-      {/* Framework Overview - The infographic with PLO reference */}
-      <div style={{ width: '100%' }}>
         <InfographicHero />
-      </div>
-
-      {/* Educational Section - Why old CLOs fail */}
-      <div style={{ width: '100%' }}>
         <WhyCLOsFail />
-      </div>
-
-      {/* Before/After Comparison - Course-specific examples */}
-      <div style={{ width: '100%' }}>
         <SLOComparison />
-      </div>
-
-      {/* AI Generator - The interactive tool */}
-      <div style={{ width: '100%' }}>
         <CLOGenerator />
-      </div>
-
-      {/* Prompt Template - DIY option */}
-      <div style={{ width: '100%' }}>
         <PromptTemplate />
-      </div>
+      </main>
 
-      {/* Footer */}
-      <div style={{ width: '100%' }}>
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }

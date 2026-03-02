@@ -1,425 +1,197 @@
-import { motion } from 'motion/react';
-import { useInView } from 'motion/react';
-import { useRef, useState } from 'react';
-import { AlertTriangle, XCircle, CheckCircle2, ArrowRight, Lightbulb, BookOpen, Target, Eye, TrendingUp, Users } from 'lucide-react';
-
-// Design system colors from style guide
-const colors = {
-  success: '#10D800',
-  info: '#168BFF',
-  warning: '#F5A623',
-  error: '#D0021B',
-  content1: '#1C1C1C',
-  content2: '#5B5757',
-  content3: '#969696',
-  icons: '#CCCCCC',
-  border: '#E8E8E8',
-  background: '#F7F7F7',
-  white: '#FFFFFF',
-};
+import { useMemo, useState } from 'react';
+import { AlertTriangle, ArrowRight, BookOpen, CheckCircle2, Target, Users, Eye } from 'lucide-react';
 
 const problems = [
   {
     id: 'unmeasurable',
     title: 'Unmeasurable Language',
     icon: Eye,
-    color: colors.error,
-    bgColor: '#FDEAEA',
-    description: 'Vague verbs make it impossible to assess whether students have achieved the outcome.',
     badExamples: [
-      { text: 'Understand the principles of design', issue: '"Understand" cannot be observed or measured' },
-      { text: 'Appreciate visual aesthetics', issue: '"Appreciate" is internal and subjective' },
-      { text: 'Know the history of graphic design', issue: '"Know" offers no evidence of learning' },
+      { text: 'Understand the principles of design', issue: '"Understand" is not observable.' },
+      { text: 'Appreciate visual aesthetics', issue: '"Appreciate" is subjective and internal.' },
+      { text: 'Know the history of graphic design', issue: 'No measurable demonstration target.' },
     ],
     goodExamples: [
-      { text: 'Identify and apply the principles of design in compositions', verb: 'Identify, Apply' },
-      { text: 'Critique visual works using established aesthetic frameworks', verb: 'Critique' },
-      { text: 'Trace the evolution of graphic design movements and their influences', verb: 'Trace' },
+      { text: 'Identify and apply principles of design in compositions', verb: 'Identify, Apply' },
+      { text: 'Critique visual work using an established framework', verb: 'Critique' },
+      { text: 'Trace the evolution of graphic design movements', verb: 'Trace' },
     ],
-    keyInsight: 'Use Bloom\'s Taxonomy action verbs: Identify, Analyze, Create, Evaluate, Demonstrate, Compare, Construct, Critique',
+    insight:
+      "Use Bloom's action verbs (identify, analyze, evaluate, create) so each outcome can be observed and assessed.",
   },
   {
     id: 'inconsistent',
     title: 'Section Inconsistency',
     icon: Users,
-    color: colors.warning,
-    bgColor: '#FEF6E8',
-    description: 'When different sections of the same course have different outcomes, assessment and accreditation become impossible.',
     badExamples: [
-      { text: 'Section A: "Create digital artwork"', issue: 'Vague scope, no standards mentioned' },
-      { text: 'Section B: "Master Adobe Creative Suite"', issue: 'Tool-focused, not outcome-focused' },
-      { text: 'Section C: "Explore creative expression"', issue: 'Unmeasurable, no clear deliverable' },
+      { text: 'Section A: "Create digital artwork"', issue: 'Vague scope and standards.' },
+      { text: 'Section B: "Master Adobe Creative Suite"', issue: 'Tool-centered, not outcome-centered.' },
+      { text: 'Section C: "Explore creative expression"', issue: 'No clear measurable deliverable.' },
     ],
     goodExamples: [
-      { text: 'All sections: "Produce digital compositions using industry-standard raster and vector tools"', verb: 'Consistent' },
-      { text: 'All sections use identical SLO language with same assessment rubrics', verb: 'Standardized' },
-      { text: 'Course coordinator reviews ensure alignment across instructors', verb: 'Governed' },
+      { text: 'All sections use identical CLO language and rubric criteria', verb: 'Standardized' },
+      { text: 'Course coordinator validates section-level alignment', verb: 'Governed' },
+      { text: 'Equivalent outcomes across instructors and terms', verb: 'Consistent' },
     ],
-    keyInsight: 'Same course = Same outcomes. Students in any section should achieve equivalent competencies.',
+    insight:
+      'Same course should mean equivalent student competencies, regardless of section or instructor assignment.',
   },
   {
     id: 'misaligned',
     title: 'Weak PLO Alignment',
     icon: Target,
-    color: colors.info,
-    bgColor: '#E8F3FF',
-    description: 'Course outcomes must map clearly to Program Learning Outcomes, showing how courses contribute to the degree\'s goals.',
     badExamples: [
-      { text: 'SLO exists in isolation with no PLO mapping', issue: 'Cannot demonstrate program coherence' },
-      { text: 'Forced mapping: "This relates to PLO 3 somehow"', issue: 'Weak or artificial connections' },
-      { text: 'All SLOs map to same PLO', issue: 'Missing coverage of program outcomes' },
+      { text: 'Outcome listed without PLO mapping', issue: 'No program contribution evidence.' },
+      { text: 'Forced mapping to unrelated PLO', issue: 'Weak curriculum logic.' },
+      { text: 'All CLOs mapped to one PLO only', issue: 'Coverage gaps across program outcomes.' },
     ],
     goodExamples: [
-      { text: 'Each SLO explicitly references 1-3 relevant PLOs', verb: 'Explicit' },
-      { text: 'Curriculum map shows progression across courses', verb: 'Mapped' },
-      { text: 'Assessment data aggregates to show PLO achievement', verb: 'Measurable' },
+      { text: 'Each CLO maps to 1-3 relevant PLOs', verb: 'Explicit' },
+      { text: 'Course-level assessments roll up to program-level analysis', verb: 'Traceable' },
+      { text: 'Curriculum map demonstrates progressive competency growth', verb: 'Coherent' },
     ],
-    keyInsight: 'SLOs are the building blocks. PLOs are the house. Every brick must have a purpose in the structure.',
+    insight: 'CLOs are the measurable path by which courses contribute to degree-level outcomes and accreditation evidence.',
   },
-];
+] as const;
 
 const beforeAfterExamples = [
   {
     course: 'DESN 100',
-    before: 'Discover how Drawing can be interpreted and refined',
-    after: 'Demonstrate foundational drawing techniques for sketching and ideation',
-    improvement: 'Changed vague "discover" to measurable "demonstrate" with specific scope',
+    before: 'Discover how drawing can be interpreted and refined.',
+    after: 'Demonstrate foundational drawing techniques for sketching and ideation.',
+    improvement: 'Replaced a vague verb with an observable action and clearer scope.',
   },
   {
     course: 'DESN 200',
-    before: 'Establish a practice of drawing',
-    after: 'Develop and document iterative ideation processes and methods',
-    improvement: 'Added specificity: what practice, how documented, what methods',
+    before: 'Establish a practice of drawing.',
+    after: 'Develop and document iterative ideation processes and methods.',
+    improvement: 'Added measurable output and process criteria.',
   },
   {
     course: 'DESN 216',
-    before: 'Apply essential use of tools',
-    after: 'Produce digital compositions using color theory principles',
-    improvement: 'Defined the output and the knowledge being applied',
+    before: 'Apply essential use of tools.',
+    after: 'Produce digital compositions using color theory principles.',
+    improvement: 'Specified output quality and applied design knowledge.',
   },
 ];
 
 export function WhyCLOsFail() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.1 });
-  const [activeTab, setActiveTab] = useState('unmeasurable');
+  const [activeTab, setActiveTab] = useState<(typeof problems)[number]['id']>('unmeasurable');
 
-  const activeProblem = problems.find(p => p.id === activeTab)!;
+  const activeProblem = useMemo(() => {
+    return problems.find((problem) => problem.id === activeTab) ?? problems[0];
+  }, [activeTab]);
 
   return (
-    <section ref={ref} style={{ background: colors.white, padding: '96px 24px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          style={{ textAlign: 'center', marginBottom: '64px' }}
-        >
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 16px',
-            background: '#FDEAEA',
-            color: colors.error,
-            fontSize: '12px',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            borderRadius: '9999px',
-            marginBottom: '16px',
-            border: `1px solid ${colors.error}20`
-          }}>
-            <AlertTriangle style={{ width: '16px', height: '16px' }} />
-            Understanding the Problem
+    <section id="diagnostics" className="section">
+      <div className="container stack-lg">
+        <header className="section-head section-head--center">
+          <span className="eyebrow eyebrow--danger">
+            <AlertTriangle className="inline-icon" />
+            Understanding the problem
           </span>
-          <h2 style={{
-            fontSize: '40px',
-            fontWeight: 700,
-            color: colors.content1,
-            marginBottom: '16px',
-            fontFamily: 'Fraunces, Georgia, serif',
-            lineHeight: '110%'
-          }}>
-            Why Traditional CLOs Fail
-          </h2>
-          <p style={{
-            fontSize: '18px',
-            color: colors.content2,
-            maxWidth: '720px',
-            margin: '0 auto',
-            lineHeight: '160%'
-          }}>
-            Before we can write better outcomes, we need to understand what's wrong with the old ones.
-            These three issues undermine assessment, accreditation, and student success.
+          <h2 className="h2">Why Traditional CLOs Fail</h2>
+          <p className="lead">
+            These are the three recurring breakdowns we see in current course outcomes and why they disrupt
+            assessment, alignment, and accreditation reporting.
           </p>
-        </motion.div>
+        </header>
 
-        {/* Problem Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.2 }}
-          style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '48px' }}
-        >
-          {problems.map((problem) => (
-            <button
-              key={problem.id}
-              onClick={() => setActiveTab(problem.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 24px',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '14px',
-                transition: 'all 0.2s ease',
-                background: activeTab === problem.id ? colors.content1 : colors.white,
-                color: activeTab === problem.id ? colors.white : colors.content2,
-                border: activeTab === problem.id ? 'none' : `1px solid ${colors.border}`,
-                cursor: 'pointer',
-                boxShadow: activeTab === problem.id ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
-              }}
-            >
-              <problem.icon style={{ width: '20px', height: '20px', color: activeTab === problem.id ? colors.white : problem.color }} />
-              {problem.title}
-            </button>
-          ))}
-        </motion.div>
-
-        {/* Active Problem Detail */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          style={{
-            background: colors.white,
-            borderRadius: '24px',
-            border: `1px solid ${colors.border}`,
-            overflow: 'hidden',
-            marginBottom: '80px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.06)'
-          }}
-        >
-          {/* Problem Header */}
-          <div style={{ padding: '32px', borderBottom: `1px solid ${colors.border}`, backgroundColor: activeProblem.bgColor }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-              <div
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: activeProblem.color,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                }}
+        <div>
+          <div className="tab-list" role="tablist" aria-label="CLO problem categories">
+            {problems.map((problem) => (
+              <button
+                key={problem.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === problem.id}
+                className={`tab-button ${activeTab === problem.id ? 'is-active' : ''}`}
+                onClick={() => setActiveTab(problem.id)}
               >
-                <activeProblem.icon style={{ width: '32px', height: '32px', color: colors.white }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  color: colors.content1,
-                  marginBottom: '8px',
-                  fontFamily: 'Fraunces, Georgia, serif'
-                }}>
-                  {activeProblem.title}
-                </h3>
-                <p style={{ fontSize: '16px', color: colors.content2, lineHeight: '150%' }}>{activeProblem.description}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Examples Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px', background: colors.border }}>
-            {/* Bad Examples */}
-            <div style={{ background: colors.background, padding: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-                <XCircle style={{ width: '24px', height: '24px', color: colors.error }} />
-                <h4 style={{ fontSize: '14px', fontWeight: 700, color: colors.error, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Problematic</h4>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {activeProblem.badExamples.map((ex, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    style={{
-                      background: colors.white,
-                      border: `1px solid ${colors.error}30`,
-                      borderRadius: '12px',
-                      padding: '16px'
-                    }}
-                  >
-                    <p style={{ color: colors.content1, marginBottom: '8px', fontWeight: 500 }}>"{ex.text}"</p>
-                    <p style={{ color: colors.error, fontSize: '13px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                      <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '2px' }} />
-                      {ex.issue}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Good Examples */}
-            <div style={{ background: colors.background, padding: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-                <CheckCircle2 style={{ width: '24px', height: '24px', color: colors.success }} />
-                <h4 style={{ fontSize: '14px', fontWeight: 700, color: colors.success, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Effective</h4>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {activeProblem.goodExamples.map((ex, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    style={{
-                      background: colors.white,
-                      border: `1px solid ${colors.success}30`,
-                      borderRadius: '12px',
-                      padding: '16px'
-                    }}
-                  >
-                    <p style={{ color: colors.content1, marginBottom: '8px', fontWeight: 500 }}>"{ex.text}"</p>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '4px 8px',
-                      background: `${colors.success}15`,
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: colors.success
-                    }}>{ex.verb}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Key Insight */}
-          <div style={{
-            padding: '24px 32px',
-            background: `${colors.warning}10`,
-            borderTop: `1px solid ${colors.warning}30`
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-              <Lightbulb style={{ width: '24px', height: '24px', color: colors.warning, flexShrink: 0, marginTop: '2px' }} />
-              <div>
-                <h5 style={{ fontWeight: 700, color: colors.warning, marginBottom: '4px', fontSize: '14px' }}>Key Insight</h5>
-                <p style={{ color: colors.content2, lineHeight: '150%' }}>{activeProblem.keyInsight}</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Before & After Transformation */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.4 }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 16px',
-              background: `${colors.success}15`,
-              color: colors.success,
-              fontSize: '12px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              borderRadius: '9999px',
-              marginBottom: '16px',
-              border: `1px solid ${colors.success}30`
-            }}>
-              <TrendingUp style={{ width: '16px', height: '16px' }} />
-              Real Transformations
-            </span>
-            <h3 style={{
-              fontSize: '32px',
-              fontWeight: 700,
-              color: colors.content1,
-              fontFamily: 'Fraunces, Georgia, serif'
-            }}>
-              Before & After: See the Difference
-            </h3>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {beforeAfterExamples.map((example, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                style={{
-                  background: colors.white,
-                  borderRadius: '16px',
-                  border: `1px solid ${colors.border}`,
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                }}
-              >
-                <div style={{ background: colors.background, padding: '16px 24px', borderBottom: `1px solid ${colors.border}` }}>
-                  <span style={{ fontWeight: 700, color: colors.content1 }}>{example.course}</span>
-                </div>
-                <div style={{ padding: '24px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '24px', alignItems: 'center' }}>
-                    {/* Before */}
-                    <div style={{
-                      background: `${colors.error}08`,
-                      border: `1px solid ${colors.error}20`,
-                      borderRadius: '12px',
-                      padding: '16px'
-                    }}>
-                      <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.error, fontWeight: 700, marginBottom: '8px' }}>Before</div>
-                      <p style={{ color: colors.content2, fontStyle: 'italic' }}>"{example.before}"</p>
-                    </div>
-
-                    {/* Arrow */}
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${colors.error}, ${colors.success})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <ArrowRight style={{ width: '24px', height: '24px', color: colors.white }} />
-                    </div>
-
-                    {/* After */}
-                    <div style={{
-                      background: `${colors.success}08`,
-                      border: `1px solid ${colors.success}20`,
-                      borderRadius: '12px',
-                      padding: '16px'
-                    }}>
-                      <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.success, fontWeight: 700, marginBottom: '8px' }}>After</div>
-                      <p style={{ color: colors.content1, fontWeight: 500 }}>"{example.after}"</p>
-                    </div>
-                  </div>
-
-                  {/* Improvement Note */}
-                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', color: colors.content3 }}>
-                    <BookOpen style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '2px', color: colors.info }} />
-                    <span><strong style={{ color: colors.info }}>What changed:</strong> {example.improvement}</span>
-                  </div>
-                </div>
-              </motion.div>
+                <problem.icon className="inline-icon" />
+                {problem.title}
+              </button>
             ))}
           </div>
-        </motion.div>
+
+          <article className="card" style={{ padding: '20px' }}>
+            <h3 className="h3" style={{ marginTop: 0 }}>
+              {activeProblem.title}
+            </h3>
+
+            <div className="example-columns">
+              <section className="card example-panel" aria-label="Problematic examples">
+                <h4 style={{ margin: 0, color: '#cf222e' }}>Problematic</h4>
+                <div className="example-list" style={{ marginTop: '12px' }}>
+                  {activeProblem.badExamples.map((example) => (
+                    <div key={example.text} className="example-item bad">
+                      <p>
+                        <strong>{example.text}</strong>
+                      </p>
+                      <p className="body-muted">{example.issue}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="card example-panel" aria-label="Improved examples">
+                <h4 style={{ margin: 0, color: '#1a7f37' }}>Effective</h4>
+                <div className="example-list" style={{ marginTop: '12px' }}>
+                  {activeProblem.goodExamples.map((example) => (
+                    <div key={example.text} className="example-item good">
+                      <p>
+                        <strong>{example.text}</strong>
+                      </p>
+                      <p>
+                        <span className="badge badge-success">{example.verb}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="key-insight" role="note">
+              <strong style={{ display: 'block', marginBottom: '6px' }}>Key insight</strong>
+              <span className="body-muted">{activeProblem.insight}</span>
+            </div>
+          </article>
+        </div>
+
+        <div>
+          <span className="eyebrow eyebrow--success">Real Transformations</span>
+          <h3 className="h3">Before and After Outcome Rewrites</h3>
+
+          <div className="before-after-list">
+            {beforeAfterExamples.map((example) => (
+              <article key={example.course} className="card before-after-card">
+                <h4 className="h4" style={{ marginTop: 0 }}>
+                  {example.course}
+                </h4>
+
+                <div className="before-after-grid">
+                  <div className="example-item bad">
+                    <strong>Before</strong>
+                    <p className="body-muted" style={{ marginTop: '6px' }}>
+                      {example.before}
+                    </p>
+                  </div>
+
+                  <ArrowRight className="inline-icon" aria-hidden="true" />
+
+                  <div className="example-item good">
+                    <strong>After</strong>
+                    <p style={{ marginTop: '6px' }}>{example.after}</p>
+                  </div>
+                </div>
+
+                <p className="small" style={{ marginTop: '12px' }}>
+                  <BookOpen className="inline-icon" /> <strong>What changed:</strong> {example.improvement}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
